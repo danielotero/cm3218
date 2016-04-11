@@ -767,15 +767,19 @@ static const struct i2c_device_id cm3218_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, cm3218_id);
 
+#ifdef CONFIG_OF
 static const struct of_device_id cm3218_of_match[] = {
 	{ .compatible = "capella,cm3218" },
 	{ }
 };
+#endif
 
+#if CONFIG_ACPI
 static const struct acpi_device_id cm3218_acpi_match[] = {
 	{ "CPLM3218", 0},
 	{},
 };
+#endif
 
 MODULE_DEVICE_TABLE(acpi, cm3218_acpi_match);
 
@@ -796,4 +800,3 @@ module_i2c_driver(cm3218_driver);
 MODULE_AUTHOR("Kevin Tsai <ktsai@capellamicro.com>");
 MODULE_DESCRIPTION("CM3218 ambient light sensor driver");
 MODULE_LICENSE("GPL");
-
