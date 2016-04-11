@@ -183,6 +183,7 @@ static int cm3218_acpi_get_cpm_info(struct i2c_client *client, char *obj_name,
 	cpm = buffer.pointer;
 	for (i = 0; i < cpm->package.count && i < count; ++i) {
 		union acpi_object *elem;
+
 		elem = &(cpm->package.elements[i]);
 		vals[i] = elem->integer.value;
 	}
@@ -248,6 +249,7 @@ static int cm3218_reg_init(struct cm3218_chip *chip)
 			int header_num = 3;
 			int reg_num = cpm_elem_count - header_num;
 			int reg_bmp = cpm_elems[2];
+
 			for (i = 0; i < reg_num; i++)
 				if (reg_bmp & (1<<i))
 					chip->conf_regs[i] =
@@ -468,7 +470,8 @@ static ssize_t cm3218_get_it_available(struct device *dev,
 
 	for (i = 0, len = 0; i < ARRAY_SIZE(cm3218_als_it_scales); i++)
 		len += scnprintf(buf + len, PAGE_SIZE - len, "%u.%06u ",
-			cm3218_als_it_scales[i].val, cm3218_als_it_scales[i].val2);
+			cm3218_als_it_scales[i].val,
+			cm3218_als_it_scales[i].val2);
 	return len + scnprintf(buf + len, PAGE_SIZE - len, "\n");
 }
 
