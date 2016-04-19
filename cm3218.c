@@ -7,7 +7,6 @@
  *
  * Special thanks Srinivas Pandruvada <srinivas.psndruvada@linux.intel.com>
  * help to add ACPI support.
- *
  */
 
 #include <linux/delay.h>
@@ -88,11 +87,6 @@ struct cm3218_chip {
 	int sensitivity_percent;
 };
 
-static int cm3218_get_lux(struct cm3218_chip *cm3218);
-static int cm3218_read_als_it(struct cm3218_chip *cm3218, int *val, int *val2);
-static int cm3218_write_als_it(struct cm3218_chip *cm3218, int val, int val2);
-static int cm3218_threshold_update(struct cm3218_chip *cm3218, int percent);
-
 /**
  * cm3218_read_ara() - Read ARA register
  * @cm3218:	pointer of struct cm3218.
@@ -156,8 +150,8 @@ static int cm3218_interrupt_config(struct cm3218_chip *chip, int enable)
  * @count	maximum size of return array.
  * @vals	pointer of array for return elements.
  *
- * Convert ACPI CPM table to array. Special thanksSrinivas Pandruvada's
- * help to implement this routine.
+ * Convert ACPI CPM table to array. Special thanks to Srinivas Pandruvada
+ * for his help implementing this routine.
  *
  * Return: -ENODEV for fail.  Otherwise is number of elements.
  */
@@ -213,10 +207,8 @@ static int cm3218_reg_init(struct cm3218_chip *chip)
 	cm3218_interrupt_config(chip, 0);
 
 	/* Disable device */
-	i2c_smbus_write_word_data(
-			chip->als_client,
-			CM3218_REG_ADDR_CMD,
-			CM3218_CMD_ALS_DISABLE);
+	i2c_smbus_write_word_data( chip->als_client,
+			CM3218_REG_ADDR_CMD, CM3218_CMD_ALS_DISABLE);
 
 	ret = i2c_smbus_read_word_data(
 			chip->als_client,
@@ -251,9 +243,9 @@ static int cm3218_reg_init(struct cm3218_chip *chip)
 			int reg_bmp = cpm_elems[2];
 
 			for (i = 0; i < reg_num; i++)
-				if (reg_bmp & (1<<i))
+				if (reg_bmp & (1 << i))
 					chip->conf_regs[i] =
-						cpm_elems[header_num+i];
+						cpm_elems[header_num + i];
 		}
 
 		cpm_elem_count = cm3218_acpi_get_cpm_info(client, "CPM1",
@@ -360,7 +352,7 @@ static int cm3218_write_als_it(struct cm3218_chip *chip, int val, int val2)
  * @cm3218:	pointer of struct cm3218.
  *
  * Convert sensor raw data to lux.  It depends on integration
- * time and claibscale variable.
+ * time and calibscale variable.
  *
  * Return: Positive value is lux, otherwise is error code.
  */
@@ -716,17 +708,7 @@ static int cm3218_probe(struct i2c_client *client,
 				-ret);
 			goto error_disable_int;
 		}
-	}
 
-	ret = iio_device_register(indio_dev);
-	if (ret < 0) {
-		dev_err(&client->dev,
-			"%s: regist device failed\n",
-			__func__);
-		goto error_free_irq;
-	}
-
-	if (client->irq) {
 		ret = cm3218_threshold_update(chip,
 					chip->sensitivity_percent);
 		if (ret < 0)
@@ -737,10 +719,19 @@ static int cm3218_probe(struct i2c_client *client,
 			goto error_free_irq;
 	}
 
+	ret = iio_device_register(indio_dev);
+	if (ret < 0) {
+		dev_err(&client->dev,
+			"%s: regist device failed\n",
+			__func__);
+		goto error_free_irq;
+	}
+
 	return 0;
 
 error_free_irq:
-	free_irq(client->irq, indio_dev);
+	if (client->irq)
+		free_irq(client->irq, indio_dev);
 error_disable_int:
 	cm3218_interrupt_config(chip, 0);
 	return ret;
@@ -751,14 +742,14 @@ static int cm3218_remove(struct i2c_client *client)
 	struct iio_dev *indio_dev = i2c_get_clientdata(client);
 	struct cm3218_chip *chip = iio_priv(indio_dev);
 
+	iio_device_unregister(indio_dev);
 	cm3218_interrupt_config(chip, 0);
 	if (client->irq)
 		free_irq(client->irq, indio_dev);
-	if (client != chip->als_client)
-		i2c_unregister_device(chip->als_client);
 	if (client != chip->ara_client)
 		i2c_unregister_device(chip->ara_client);
-	iio_device_unregister(indio_dev);
+	if (client != chip->als_client)
+		i2c_unregister_device(chip->als_client);
 
 	return 0;
 }
